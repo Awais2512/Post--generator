@@ -4,18 +4,13 @@ import pandas as pd
 import time , requests
 from PIL import Image
 from typing import Optional, Dict, List
-from langchain_community.document_loaders import WebBaseLoader
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
 from datetime import datetime
 from flask import Flask ,jsonify ,request
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
-# from dotenv import load_dotenv
-# load_dotenv()
+
 
 class ContentCreationBot:
     def __init__(self, file_path="sample code/data/processed_posts.json"):
@@ -35,7 +30,6 @@ class ContentCreationBot:
         self.load_posts(file_path)
         # Initialize models and embeddings
         self.model = ChatOpenAI(temperature=0.7)
-        self.embeddings = OpenAIEmbeddings()
 
     
     def load_posts(self, file_path):
@@ -79,11 +73,10 @@ class ContentCreationBot:
         prompt = f"""
         Generate a professional LinkedIn post for a healthcare company called 'Emend Healthcare'. 
 
-        1) Topic: {tag}
-        2) Length: {length_str}
-        3) Audience: Healthcare professionals, patients, and families looking for rehabilitation services.
-        4) Focus: Highlight Emend Healthcare's services, including compassionate care, personalized recovery plans, and innovative approaches to rehabilitation.
-        5) Include a professional tone, engaging call-to-action, and 3-5 relevant hashtags such as #Rehabilitation, #HealthcareInnovation, and #RecoveryJourney.
+        1) Length: {length_str}
+        2) Audience: Healthcare professionals, patients, and families looking for rehabilitation services.
+        3) Focus: Highlight Emend Healthcare's services, including compassionate care, personalized recovery plans, and innovative approaches to rehabilitation.
+        4) Include a professional tone, engaging call-to-action, and 3-5 relevant hashtags such as #Rehabilitation, #HealthcareInnovation, and #RecoveryJourney at the end of the post, without the word "hashtag" preceding them.
 
         The script for the generated post should always be in English.
         """
@@ -99,41 +92,41 @@ class ContentCreationBot:
 
                 if i == 1:  # Use max two samples
                     break
+
         if customizations:
             prompt += "\n\nScript must be in according to the following Special customizations:"
             for k ,v in customizations.items():
-                prompt+=f'\n{k}  : {v}'
-        
-        
+                prompt += f'\n{k}  : {v}'
+
         # Generate content
-        # social_output = self.model.invoke(social_template.format(text=content_text))
         social_output = self.model.invoke(prompt)
+        # print(social_output.content)
         return social_output.content
 
 
 
+
     def generate_image(self, prompt: str, max_retries: int = 3) -> Optional[bytes]:
-        IMG_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+        IMG_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev"
         headers = {"Authorization": f"Bearer {self.huggingface_token}"}
         default_background_color = "#F0F8FF"
         default_text_color = "#2C3E50"
 
         # Default template settings inspired by the provided newsletter
         default_prompt = """
-        Design an engaging, professional healthcare-themed image resembling the first page of a newsletter.
+        Design a serene, professional healthcare-themed image for a rehab company called "Emend Healthcare."
         Features:
-        - Background: Light blue (#F0F8FF), minimalistic, and clean design
-        - Header Text: Bold and professional, similar to 'Your Journey Is Just Beginning' from the newsletter
-        - Footer: Include placeholders for 'www.emendhealthcare.com' and '@emendhealthcare'
-        - Content: Showcase healthcare services with an emphasis on innovation and compassion
-        - Icons/Imagery: Subtle healthcare symbols (e.g., hearts, stethoscopes) in a modern flat design
+        - Text Placement: Leave space for text near the center but avoid adding any text, logos, or other graphic elements.
+        - Color Palette: Use soothing natural tones, emphasizing blues, greens, and soft sunlight reflections on water.
+        - Focus: Minimalistic and clean design to evoke a sense of peace, recovery, and new beginnings.
+        - Text: Do not use any Text.
         """
 
         # Merge optional prompt with the default template
         if prompt:
-            full_prompt = default_prompt + f"\n\nAdditional Features:\n{prompt}"
+            full_prompt = default_prompt + f"\n\n-Additional Features:\nScene: {prompt}"
         else:
-            full_prompt = default_prompt
+            full_prompt = default_prompt + f"\n- Scene: A calm lake surrounded by mountains under a clear sky. A red kayak is visible in the foreground, pointing toward the horizon, symbolizing a journey."
 
         payload = {
             "inputs": full_prompt,
