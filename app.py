@@ -234,6 +234,45 @@ class ContentCreationBot:
         email_content = llm_chain.run({"customizations": str(customizations)})
 
         return email_content
+       
+    def generate_sms(self, customizations: dict = None) -> str:
+        """
+        Generate an SMS content dynamically based on the input customizations.
+        """
+        # Define the prompt template for SMS generation
+        sms_prompt_template = """
+        You are tasked with generating a personalized and engaging SMS for "Emend Healthcare," a company specializing in rehabilitation and recovery services.
+
+        Instructions:
+        - Keep the message short and engaging (within 160 characters).
+        - Use a friendly and compassionate tone.
+        - Tailor the content to resonate with the recipient, such as individuals in recovery or their families.
+        - If customization details are provided, include them in the SMS content. Examples include tone, specific holidays, or calls to action.
+        - Include relevant details, such as the sender (e.g., "Your friends at Emend Healthcare").
+
+        Customizations:
+        {customizations}
+
+        Generate the SMS content based on the above details and ensure it is concise and impactful.
+        """
+
+        # Create a default set of customizations if none are provided
+        if not customizations:
+            customizations = {
+                "tone": "friendly and compassionate",
+                "holiday": "New Year",
+                "call_to_action": "Reach out if you need support or guidance on your recovery journey.",
+                "sender": "Your friends at Emend Healthcare"
+            }
+
+        # Generate the prompt by filling in the customizations
+        prompt = sms_prompt_template.format(customizations=json.dumps(customizations, indent=2))
+
+        # Generate SMS content using the language model
+        sms_content = self.model.invoke(prompt).content
+
+        return sms_content
+
 
 
 app = Flask(__name__)
@@ -269,6 +308,16 @@ def generate_image():
         return jsonify({"error": "Image generation failed"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+@app.route("/generate_sms", methods=["POST"])
+def generate_sms():
+    try:
+        customizations = request.get_json() or {}
+        sms_content = content_creation_bot.generate_sms(customizations)
+        return jsonify({"sms_content": sms_content}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
 
 if __name__ == "__main__":
     app.run(debug=True)
