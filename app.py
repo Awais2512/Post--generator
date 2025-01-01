@@ -13,7 +13,7 @@ from langchain.chains import LLMChain
 
 
 class ContentCreationBot:
-    def __init__(self, file_path="sample code/data/processed_posts.json"):
+    def __init__(self, file_path="data/processed_posts.json"):
         # Initialize API keys and FAISS index path
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.huggingface_token = os.getenv('HUGGINGFACE_API_TOKEN')
